@@ -1,5 +1,27 @@
 import json
 import os
+class Asset:
+    def __init__(self, nama, modal, harga_rata_rata, harga_sekarang):
+        self.nama = nama
+        self.modal = modal
+        self.harga_rata_rata = harga_rata_rata
+        self.harga_sekarang = harga_sekarang
+    def jumlah_aset(self):
+        return self.modal/self.harga_rata_rata
+    def nilai_aset(self):
+        return self.jumlah_aset()*self.harga_sekarang
+    def pnl(self):
+        return self.nilai_aset()-self.modal
+    def persentase(self):
+        return (self.pnl()/self.modal)*100
+    def to_dict(self):
+        return {
+            'nama': self.nama,
+            'modal': self.modal,
+            'harga': self.harga_rata_rata,
+            'harga sekarang': self.harga_sekarang
+        }
+
 portofolio = []
 print('==============================================\n'
       '                SFYFOLIO\n'
@@ -12,45 +34,50 @@ def load_data():
         simpan_data()
         return
     with open('portofolio.json','r') as file:
-        portofolio = json.load(file)
+        data = json.load(file)
+    portofolio=[]
+    for item in data:
+        aset = Asset(
+            item['nama'],
+            item['modal'],
+            item['harga'],
+            item['harga sekarang']
+      )
+        portofolio.append(aset)
 def simpan_data():
+    data = []
+    for aset in portofolio:
+        data.append(aset.to_dict())
     with open('portofolio.json','w') as file:
-        json.dump(portofolio,file,indent=4)
+        json.dump(data,file,indent=4)
 def lihat_portofolio():
     if len(portofolio) == 0:
         print('Portofolio masih kosong')
         return
     total_modal = 0
     total_portofolio = 0
-    jumlah_aset = 0
-    pnl = 0
     total_pnl = 0
-    print('\n=====PORTOFOLIO ANDA====')
+    print('\n========PORTOFOLIO ANDA========')
     for aset in portofolio:
-        jumlah_aset = aset['modal']/aset['harga_rata_rata']
-        nilai_aset = jumlah_aset*aset['harga_sekarang']
-        aset['jumlah_aset'] = jumlah_aset
-        aset['nilai_aset'] = nilai_aset
-        pnl = nilai_aset-aset['modal']
-        aset['pnl'] = pnl
-        pnl_persen = pnl/aset['modal']*100
-        aset['pnl_persen'] = pnl_persen
-        total_modal += aset['modal']
+        nilai_aset = aset.nilai_aset()
+        pnl = aset.pnl()
+        total_modal += aset.modal
         total_pnl += pnl
         total_portofolio += nilai_aset
         total_return = (total_pnl/total_modal)*100
     for aset in portofolio:
-        alokasi = aset['nilai_aset'] / total_portofolio * 100
+        nilai_aset = aset.nilai_aset()
+        alokasi = nilai_aset/total_portofolio*100
         print('-------------------------------')
-        print('Nama            :',aset['nama'])
-        print(f'Modal           : Rp.{aset['modal']:,.0f}')
-        print(f'Harga Rata-rata : Rp.{aset['harga_rata_rata']:,.0f}')
-        print(f'Harga sekarang  : Rp.{aset['harga_sekarang']:,.0f}')
-        print(f'Jumlah Aset`    : {aset['jumlah_aset']:,.7f}')
-        print(f'P/L             : Rp.{aset['pnl']:,.0f}')
-        print(f'P/L(%)          : {aset['pnl_persen']:,.2f}%')
+        print('Nama            :',aset.nama)
+        print(f'Modal           : Rp.{aset.modal :,.0f}')
+        print(f'Harga Rata-rata : Rp.{aset.harga_rata_rata :,.0f}')
+        print(f'Harga sekarang  : Rp.{aset.harga_sekarang :,.0f}')
+        print(f'Jumlah Aset     : {aset.jumlah_aset() :,.7f}')
+        print(f'P/L             : Rp.{aset.pnl() :,.0f}')
+        print(f'P/L(%)          : {aset.persentase() :,.2f}%')
         print(f'Alokasi aset    : {alokasi:,.2f}%')
-        print(f'Nilai aset      : Rp.{aset['nilai_aset']:,.0f}')
+        print(f'Nilai aset      : Rp.{aset.nilai_aset():,.0f}')
     print('================================')
     print(f'Total Modal      : Rp.{total_modal:,.0f}')
     print(f'Total Portofolio : Rp.{total_portofolio:,.0f}')
@@ -79,14 +106,10 @@ def tambah_aset():
     except ValueError:
         print('Input harus berupa angka')
         return
-    aset = {
-        'nama':nama,
-        'modal':modal,
-        'harga_rata_rata':harga_rata_rata,
-        'harga_sekarang':harga_sekarang
-    }
+    aset = Asset(nama,modal,harga_rata_rata,harga_sekarang)
     portofolio.append(aset)
     simpan_data()
+    print('Aset berhasil ditambahkan')
     print('\n===== DATA ASET =====')
     print('Nama Aset        :',nama)
     print('Modal            :',modal)
@@ -97,8 +120,7 @@ def edit_aset():
     nama = input('Nama aset:').strip().lower()
     ditemukan = False
     for aset in portofolio:
-        nama_aset = aset['nama']
-        if aset['nama'].lower() == nama:
+        if aset.nama.lower() == nama:
             ditemukan = True
             break
     if not ditemukan:
@@ -120,9 +142,9 @@ def edit_aset():
     except ValueError:
         print('Input harus berupa angka')
         return
-    aset['modal'] = modal_baru
-    aset['harga_rata_rata'] = harga_rata_rata_baru
-    aset['harga_sekarang'] = harga_baru
+    aset.modal = modal_baru
+    aset.harga_rata_rata = harga_rata_rata_baru
+    aset.harga_sekarang = harga_baru
     simpan_data()
     print('Data berhasil diubah')
 def hapus_aset():
@@ -130,14 +152,13 @@ def hapus_aset():
     nama = input('Aset yang ingin dihapus:').lower().strip()
     ditemukan = False
     for aset in portofolio:
-        nama_aset = aset['nama']
-        if aset['nama'].lower() == nama:
+        if aset.nama.lower() == nama:
             ditemukan = True
             break
     if not ditemukan:
         print('Aset tidak ditemukan')
         return
-    konfirmasi = input(f'Yakin ingin menghapus {aset['nama']} (y/n):').lower().strip()
+    konfirmasi = input(f'Yakin ingin menghapus {aset.nama} (y/n):').lower().strip()
     if konfirmasi == 'y':
         portofolio.remove(aset)
         simpan_data()
@@ -151,23 +172,15 @@ def cari_aset():
     nama = input('Nama Aset :').strip().lower()
     ditemukan = False
     for aset in portofolio:
-        jumlah_aset = aset['modal'] / aset['harga_rata_rata']
-        nilai_aset = jumlah_aset * aset['harga_sekarang']
-        aset['jumlah_aset'] = jumlah_aset
-        aset['nilai_aset'] = nilai_aset
-        pnl = nilai_aset - aset['modal']
-        aset['pnl'] = pnl
-        pnl_persen = pnl / aset['modal'] * 100
-        aset['pnl_persen'] = pnl_persen
-        if aset['nama'].lower() == nama:
-            print('Nama            :', aset['nama'])
-            print(f'Modal           : Rp.{aset['modal']:,.0f}')
-            print(f'Harga Rata-rata : Rp.{aset['harga_rata_rata']:,.0f}')
-            print(f'Harga sekarang  : Rp.{aset['harga_sekarang']:,.0f}')
-            print(f'Jumlah Aset`    : {aset['jumlah_aset']:,.7f}')
-            print(f'P/L             : Rp.{aset['pnl']:,.0f}')
-            print(f'P/L(%)          : {aset['pnl_persen']:,.2f}%')
-            print(f'Nilai aset      : Rp.{aset['nilai_aset']:,.0f}')
+        if aset.nama.lower() == nama:
+            print('Nama            :', aset.nama)
+            print(f'Modal           : Rp.{aset.modal:,.0f}')
+            print(f'Harga Rata-rata : Rp.{aset.harga_rata_rata:,.0f}')
+            print(f'Harga sekarang  : Rp.{aset.harga_sekarang:,.0f}')
+            print(f'Jumlah Aset`    : {aset.jumlah_aset():,.7f}')
+            print(f'P/L             : Rp.{aset.pnl():,.0f}')
+            print(f'P/L(%)          : {aset.persentase():,.2f}%')
+            print(f'Nilai aset      : Rp.{aset.nilai_aset():,.0f}')
             ditemukan = True
             break
     if not ditemukan:
