@@ -21,8 +21,34 @@ class Asset:
             'harga': self.harga_rata_rata,
             'harga sekarang': self.harga_sekarang
         }
-
-portofolio = []
+class Portofolio:
+    def __init__(self):
+        self.aset =[]
+    def total_modal(self):
+        total = 0
+        for aset in self.aset:
+            total += aset.modal
+        return total
+    def total_portofolio(self):
+        total = 0
+        for aset in self.aset:
+            total += aset.nilai_aset()
+        return total
+    def total_pnl(self):
+        total = 0
+        for aset in self.aset:
+            total += aset.pnl()
+        return total
+    def total_return(self):
+        return self.total_pnl()/self.total_modal()*100
+    def alokasi(self, aset):
+        return aset.nilai_aset()/self.total_portofolio()*100
+    def to_dict(self):
+        data = []
+        for aset in self.aset:
+            data.append(aset.to_dict())
+        return data
+portofolio = Portofolio()
 print('==============================================\n'
       '                SFYFOLIO\n'
       '==============================================\n'
@@ -30,12 +56,12 @@ print('==============================================\n'
 def load_data():
     global portofolio
     if not os.path.exists('portofolio.json'):
-        portofolio=[]
+        portofolio=Portofolio()
         simpan_data()
         return
     with open('portofolio.json','r') as file:
         data = json.load(file)
-    portofolio=[]
+    portofolio = Portofolio()
     for item in data:
         aset = Asset(
             item['nama'],
@@ -43,31 +69,17 @@ def load_data():
             item['harga'],
             item['harga sekarang']
       )
-        portofolio.append(aset)
+        portofolio.aset.append(aset)
 def simpan_data():
-    data = []
-    for aset in portofolio:
-        data.append(aset.to_dict())
+    data = portofolio.to_dict()
     with open('portofolio.json','w') as file:
         json.dump(data,file,indent=4)
 def lihat_portofolio():
-    if len(portofolio) == 0:
+    if len(portofolio.aset) == 0:
         print('Portofolio masih kosong')
         return
-    total_modal = 0
-    total_portofolio = 0
-    total_pnl = 0
     print('\n========PORTOFOLIO ANDA========')
-    for aset in portofolio:
-        nilai_aset = aset.nilai_aset()
-        pnl = aset.pnl()
-        total_modal += aset.modal
-        total_pnl += pnl
-        total_portofolio += nilai_aset
-        total_return = (total_pnl/total_modal)*100
-    for aset in portofolio:
-        nilai_aset = aset.nilai_aset()
-        alokasi = nilai_aset/total_portofolio*100
+    for aset in portofolio.aset:
         print('-------------------------------')
         print('Nama            :',aset.nama)
         print(f'Modal           : Rp.{aset.modal :,.0f}')
@@ -76,13 +88,13 @@ def lihat_portofolio():
         print(f'Jumlah Aset     : {aset.jumlah_aset() :,.7f}')
         print(f'P/L             : Rp.{aset.pnl() :,.0f}')
         print(f'P/L(%)          : {aset.persentase() :,.2f}%')
-        print(f'Alokasi aset    : {alokasi:,.2f}%')
+        print(f'Alokasi aset    : {portofolio.alokasi(aset):,.2f}%')
         print(f'Nilai aset      : Rp.{aset.nilai_aset():,.0f}')
     print('================================')
-    print(f'Total Modal      : Rp.{total_modal:,.0f}')
-    print(f'Total Portofolio : Rp.{total_portofolio:,.0f}')
-    print(f'Total P/L        : Rp.{total_pnl:,.0f}')
-    print(f'Total Return     : {total_return:,.2f}%')
+    print(f'Total Modal      : Rp.{portofolio.total_modal():,.0f}')
+    print(f'Total Portofolio : Rp.{portofolio.total_portofolio():,.0f}')
+    print(f'Total P/L        : Rp.{portofolio.total_pnl():,.0f}')
+    print(f'Total Return     : {portofolio.total_return():,.2f}%')
 
 def tambah_aset():
     print('\n=====TAMBAH ASET=====')
@@ -107,7 +119,7 @@ def tambah_aset():
         print('Input harus berupa angka')
         return
     aset = Asset(nama,modal,harga_rata_rata,harga_sekarang)
-    portofolio.append(aset)
+    portofolio.aset.append(aset)
     simpan_data()
     print('Aset berhasil ditambahkan')
     print('\n===== DATA ASET =====')
@@ -119,7 +131,7 @@ def edit_aset():
     print('\n=====EDIT ASET=====')
     nama = input('Nama aset:').strip().lower()
     ditemukan = False
-    for aset in portofolio:
+    for aset in portofolio.aset:
         if aset.nama.lower() == nama:
             ditemukan = True
             break
@@ -151,7 +163,7 @@ def hapus_aset():
     print('=====HAPUS ASET=====')
     nama = input('Aset yang ingin dihapus:').lower().strip()
     ditemukan = False
-    for aset in portofolio:
+    for aset in portofolio.aset:
         if aset.nama.lower() == nama:
             ditemukan = True
             break
@@ -160,7 +172,7 @@ def hapus_aset():
         return
     konfirmasi = input(f'Yakin ingin menghapus {aset.nama} (y/n):').lower().strip()
     if konfirmasi == 'y':
-        portofolio.remove(aset)
+        portofolio.aset.remove(aset)
         simpan_data()
         print('Aset berhasil dihapus')
     elif konfirmasi == 'n':
@@ -171,7 +183,7 @@ def cari_aset():
     print('\n=====CARI ASET=====')
     nama = input('Nama Aset :').strip().lower()
     ditemukan = False
-    for aset in portofolio:
+    for aset in portofolio.aset:
         if aset.nama.lower() == nama:
             print('Nama            :', aset.nama)
             print(f'Modal           : Rp.{aset.modal:,.0f}')
@@ -186,9 +198,8 @@ def cari_aset():
     if not ditemukan:
         print('Aset tidak ditemukan')
         return
-
+load_data()
 while True:
-    load_data()
     print('1. Lihat Portofolio\n'
           '2. Tambah Aset\n'
           '3. Edit Aset\n'
