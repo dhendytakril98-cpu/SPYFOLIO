@@ -1,79 +1,10 @@
-import json
-import os
-class Asset:
-    def __init__(self, nama, modal, harga_rata_rata, harga_sekarang):
-        self.nama = nama
-        self.modal = modal
-        self.harga_rata_rata = harga_rata_rata
-        self.harga_sekarang = harga_sekarang
-    def jumlah_aset(self):
-        return self.modal/self.harga_rata_rata
-    def nilai_aset(self):
-        return self.jumlah_aset()*self.harga_sekarang
-    def pnl(self):
-        return self.nilai_aset()-self.modal
-    def persentase(self):
-        return (self.pnl()/self.modal)*100
-    def to_dict(self):
-        return {
-            'nama': self.nama,
-            'modal': self.modal,
-            'harga': self.harga_rata_rata,
-            'harga sekarang': self.harga_sekarang
-        }
-class Portofolio:
-    def __init__(self):
-        self.aset =[]
-    def total_modal(self):
-        total = 0
-        for aset in self.aset:
-            total += aset.modal
-        return total
-    def total_portofolio(self):
-        total = 0
-        for aset in self.aset:
-            total += aset.nilai_aset()
-        return total
-    def total_pnl(self):
-        total = 0
-        for aset in self.aset:
-            total += aset.pnl()
-        return total
-    def total_return(self):
-        return self.total_pnl()/self.total_modal()*100
-    def alokasi(self, aset):
-        return aset.nilai_aset()/self.total_portofolio()*100
-    def to_dict(self):
-        data = []
-        for aset in self.aset:
-            data.append(aset.to_dict())
-        return data
-portofolio = Portofolio()
+from asset import Asset
+from storage import load_data, simpan_data
+portofolio = load_data()
 print('==============================================\n'
       '                SFYFOLIO\n'
       '==============================================\n'
       '')
-def load_data():
-    global portofolio
-    if not os.path.exists('portofolio.json'):
-        portofolio=Portofolio()
-        simpan_data()
-        return
-    with open('portofolio.json','r') as file:
-        data = json.load(file)
-    portofolio = Portofolio()
-    for item in data:
-        aset = Asset(
-            item['nama'],
-            item['modal'],
-            item['harga'],
-            item['harga sekarang']
-      )
-        portofolio.aset.append(aset)
-def simpan_data():
-    data = portofolio.to_dict()
-    with open('portofolio.json','w') as file:
-        json.dump(data,file,indent=4)
 def lihat_portofolio():
     if len(portofolio.aset) == 0:
         print('Portofolio masih kosong')
@@ -120,7 +51,7 @@ def tambah_aset():
         return
     aset = Asset(nama,modal,harga_rata_rata,harga_sekarang)
     portofolio.aset.append(aset)
-    simpan_data()
+    simpan_data(portofolio)
     print('Aset berhasil ditambahkan')
     print('\n===== DATA ASET =====')
     print('Nama Aset        :',nama)
@@ -157,7 +88,7 @@ def edit_aset():
     aset.modal = modal_baru
     aset.harga_rata_rata = harga_rata_rata_baru
     aset.harga_sekarang = harga_baru
-    simpan_data()
+    simpan_data(portofolio)
     print('Data berhasil diubah')
 def hapus_aset():
     print('=====HAPUS ASET=====')
@@ -173,7 +104,7 @@ def hapus_aset():
     konfirmasi = input(f'Yakin ingin menghapus {aset.nama} (y/n):').lower().strip()
     if konfirmasi == 'y':
         portofolio.aset.remove(aset)
-        simpan_data()
+        simpan_data(portofolio)
         print('Aset berhasil dihapus')
     elif konfirmasi == 'n':
         print('Penghapusan dibatalkan')
@@ -198,7 +129,6 @@ def cari_aset():
     if not ditemukan:
         print('Aset tidak ditemukan')
         return
-load_data()
 while True:
     print('1. Lihat Portofolio\n'
           '2. Tambah Aset\n'
